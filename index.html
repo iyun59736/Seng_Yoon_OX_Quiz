@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>생윤 OX 퀴즈</title> 
+  <style>
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #f2f4f8;
+      margin: 0;
+    }
+
+    .container {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 500px;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 20px;
+    }
+
+    #categories label {
+      display: block;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+
+    button {
+      margin-top: 20px;
+      padding: 12px 25px;
+      border: none;
+      border-radius: 12px;
+      background: #4f46e5;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #4338ca;
+    }
+
+    #quiz {
+      display: none;
+    }
+
+    #questionNumber {
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #555;
+    }
+
+    #question {
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+
+    #explanation {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 20px;
+    }
+
+    #options {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      gap: 30px;
+    }
+
+    #options button {
+      width: 80px;
+      height: 50px;
+      background: #e5e7eb;
+      color: #111;
+      font-size: 18px;
+    }
+
+    #options button:hover {
+      background: #d1d5db;
+    }
+
+    #result {
+      display: none;
+      font-size: 20px;
+    }
+
+    .spreadsheet-link {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 14px;
+      color: #2563eb;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .spreadsheet-link:hover {
+      color: #1e40af;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <h1>생윤 OX 퀴즈</h1>
+
+    <div id="startScreen">
+      <h3>범위 선택</h3>
+      <div id="categories"></div>
+      <button onclick="startQuiz()">퀴즈 시작</button>
+      <div>
+        <a href="https://docs.google.com/spreadsheets/d/1ACzdYMTqcGJRojVA990J-fSxHQjK3JXPKjHzwOedkB0/edit" target="_blank" class="spreadsheet-link">
+          문제 스프레드시트 열기
+        </a>
+      </div>
+    </div>
+
+    <div id="quiz">
+      <div id="questionNumber"></div>
+      <div id="question"></div>
+      <div id="explanation"></div>
+      <div id="options"></div>
+      <button onclick="nextStep()">다음</button>
+    </div>
+
+    <div id="result"></div>
+
+  </div>
+
+<script>
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/1ACzdYMTqcGJRojVA990J-fSxHQjK3JXPKjHzwOedkB0/gviz/tq?tqx=out:json";
+
+let allData = [];
+let filteredQuestions = [];
+let currentQuestion = 0;
+let correctCount = 0;
+let state = "answer";
+
+async function loadSheetData() {
+  const res = await fetch(SHEET_URL);
+  const text = await res.text();
+  const json = JSON.parse(text.substr(47).slice(0, -2));
+  const rows = json.table.rows;
+
+  allData = rows.map(row => ({
+    question: row.c[0]?.v,
+    answer: row.c[1]?.v?.toUpperCase(), // O 또는 X
+    category: row.c[2]?.v,
+    explanation: row.c[3]?.v || ""      // D열: 해설
+  })).filter(q => q.question && q.answer && q.category);
+
+  const uniqueCategories = [...new Set(allData.map(q => q.category))];
+  const catDiv = document.getElementById("categories");
+
+  uniqueCategories.forEach(cat => {
+    const label = document.createElement("label");
+    label.innerHTML = `<input type="checkbox" value="${cat}"> ${cat}`;
+    catDiv.appendChild(label);
+  });
+}
+
+function startQuiz() {
+  const checked = document.querySelectorAll("#categories input:checked");
+  const selectedCategories = Array.from(checked).map(cb => cb.value);
+
+  filteredQuestions = allData.filter(q => selectedCategories.includes(q.category));
+  shuffleArray(filteredQuestions);
+
+  currentQuestion = 0;
+  correctCount = 0;
+  state = "answer";
+
+  document.getElementById("startScreen").style.display = "none";
+  document.getElementById("quiz").style.display = "block";
+  document.getElementById("result").style.display = "none";
+
+  showQuestion();
+}
+
+function showQuestion() {
+  const q = filteredQuestions[currentQuestion];
+
+  document.getElementById("questionNumber").innerText =
+    `${currentQuestion + 1} / ${filteredQuestions.length}`;
+
+  document.getElementById("question").innerText = q.question;
+  document.getElementById("explanation").innerText = ""; // 해설 초기화
+
+  const optionsDiv = document.getElementById("options");
+  optionsDiv.innerHTML = "";
+
+  ["O", "X"].forEach(opt => {
+    const btn = document.createElement("button");
+    btn.innerText = opt;
+
+    btn.onclick = () => {
+      if (state !== "answer") return;
+
+      const buttons = optionsDiv.querySelectorAll("button");
+      buttons.forEach(b => {
+        if (b.innerText === q.answer) {
+          b.style.background = "#86efac"; // 정답 초록
+        } else if (b.innerText === opt) {
+          b.style.background = "#fca5a5"; // 오답 빨강
+        }
+      });
+
+      if (opt === q.answer) correctCount++;
+
+      // 해설 표시
+      document.getElementById("explanation").innerText = q.explanation;
+
+      state = "next";
+    };
+
+    optionsDiv.appendChild(btn);
+  });
+}
+
+function nextStep() {
+  if (state === "answer") return;
+
+  currentQuestion++;
+
+  if (currentQuestion >= filteredQuestions.length) {
+    document.getElementById("quiz").style.display = "none";
+    document.getElementById("result").style.display = "block";
+    document.getElementById("startScreen").style.display = "block";
+
+    document.getElementById("result").innerText =
+      `결과: ${correctCount} / ${filteredQuestions.length} 정답`;
+
+    return;
+  }
+
+  state = "answer";
+  showQuestion();
+}
+
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+loadSheetData();
+</script>
+
+</body>
+</html>
