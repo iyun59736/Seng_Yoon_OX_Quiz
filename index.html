@@ -13,36 +13,28 @@
       background: #f2f4f8;
       margin: 0;
     }
-
     .container {
       background: white;
       padding: 30px 40px;
       border-radius: 16px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.1);
       width: 100%;
-      max-width: 600px;
+      max-width: 800px;
       text-align: center;
     }
-
-    h1 {
-      margin-bottom: 20px;
-    }
-
-    #toggleBtn {
-      margin-bottom: 10px;
-      background-color: #6b7280;
-    }
-
-    #categories {
-      margin-top: 10px;
-    }
-
-    #categories label {
-      display: block;
-      margin: 5px 0;
+    #questionNumber { font-weight: bold; margin-bottom: 10px; color: #555; }
+    #question { font-size: 20px; margin-bottom: 10px; }
+    #explanation { font-size: 14px; color: #555; margin-bottom: 20px; }
+    #options { display: flex; flex-direction: column; gap: 12px; }
+    #options button {
+      width: 100%;
+      background: #e5e7eb;
+      color: #111;
       font-size: 16px;
     }
-
+    #options button:hover { background: #d1d5db; }
+    #resultScreen { display: none; }
+    #resultText { font-size: 28px; font-weight: bold; margin-bottom: 20px; }
     button {
       margin-top: 20px;
       padding: 12px 25px;
@@ -53,64 +45,11 @@
       font-size: 16px;
       cursor: pointer;
     }
-
-    button:hover {
-      background: #4338ca;
-    }
-
-    #quiz {
-      display: none;
-    }
-
-    #questionNumber {
-      font-weight: bold;
-      margin-bottom: 10px;
-      color: #555;
-    }
-
-    #question {
-      font-size: 20px;
-      margin-bottom: 10px;
-    }
-
-    #explanation {
-      font-size: 14px;
-      color: #555;
-      margin-bottom: 20px;
-    }
-
-    #options {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    #options button {
-      width: 100%;
-      background: #e5e7eb;
-      color: #111;
-      font-size: 16px;
-    }
-
-    #options button:hover {
-      background: #d1d5db;
-    }
-
-    #result {
-      display: none;
-      font-size: 20px;
-    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>퀴즈</h1>
-
-    <div id="startScreen">
-      <button onclick="toggleCategories()" id="toggleBtn">카테고리 보기 ▼</button>
-      <div id="categories" style="display: none;"></div>
-      <button onclick="startQuiz()">퀴즈 시작</button>
-    </div>
 
     <div id="quiz">
       <div id="questionNumber"></div>
@@ -120,148 +59,88 @@
       <button onclick="nextStep()">다음</button>
     </div>
 
-    <div id="result"></div>
+    <div id="resultScreen">
+      <div id="resultText"></div>
+      <button onclick="location.reload()">처음으로</button>
+    </div>
   </div>
 
-<script>
-  // ✅ 문제 데이터를 아래 형식으로 입력하세요
-  const allData = [
-    {
-      question: "문제",
-      correct: "정답",
-      wrong1: "오답1",
-      wrong2: "오답2",
-      wrong3: "오답3",
-      category: "분류",
-      explanation: "해설"
-    },
-  ];
+  <!-- 문제 데이터 -->
+  <script src="윤리학.js"></script>
 
-  let filteredQuestions = [];
-  let currentQuestion = 0;
-  let correctCount = 0;
-  let state = "answer";
+  <!-- 퀴즈 로직 -->
+  <script>
+    let currentQuestion = 0;
+    let correctCount = 0;
+    let state = "answer";
 
-  function loadLocalData() {
-    const uniqueCategories = [...new Set(allData.map(q => q.category))];
-    const catDiv = document.getElementById("categories");
+    shuffleArray(allData);
 
-    uniqueCategories.forEach(cat => {
-      const label = document.createElement("label");
-      label.innerHTML = `<input type="checkbox" value="${cat}"> ${cat}`;
-      catDiv.appendChild(label);
-    });
-  }
+    function showQuestion() {
+      const q = allData[currentQuestion];
 
-  function toggleCategories() {
-    const catDiv = document.getElementById("categories");
-    const btn = document.getElementById("toggleBtn");
+      const options = [
+        { text: q.correct, isCorrect: true },
+        { text: q.wrong1, isCorrect: false },
+        { text: q.wrong2, isCorrect: false },
+        { text: q.wrong3, isCorrect: false }
+      ];
+      shuffleArray(options);
 
-    if (catDiv.style.display === "none") {
-      catDiv.style.display = "block";
-      btn.innerText = "카테고리 숨기기 ▲";
-    } else {
-      catDiv.style.display = "none";
-      btn.innerText = "카테고리 보기 ▼";
+      document.getElementById("questionNumber").innerText =
+        `${currentQuestion + 1} / ${allData.length}`;
+      document.getElementById("question").innerText = q.question;
+      document.getElementById("explanation").innerText = "";
+
+      const optionsDiv = document.getElementById("options");
+      optionsDiv.innerHTML = "";
+
+      options.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.innerText = opt.text;
+
+        btn.onclick = () => {
+          if (state !== "answer") return;
+
+          const buttons = optionsDiv.querySelectorAll("button");
+          buttons.forEach(b => {
+            if (b.innerText === q.correct) b.style.background = "#86efac";
+            else if (b.innerText === opt.text) b.style.background = "#fca5a5";
+          });
+
+          if (opt.isCorrect) correctCount++;
+          document.getElementById("explanation").innerText = q.explanation;
+          state = "next";
+        };
+
+        optionsDiv.appendChild(btn);
+      });
     }
-  }
 
-  function startQuiz() {
-    const checked = document.querySelectorAll("#categories input:checked");
-    if (checked.length === 0) {
-      alert("카테고리를 하나 이상 선택해주세요!");
-      return;
+    function nextStep() {
+      if (state === "answer") return;
+
+      currentQuestion++;
+      if (currentQuestion >= allData.length) {
+        document.getElementById("quiz").style.display = "none";
+        document.getElementById("resultScreen").style.display = "block";
+        document.getElementById("resultText").innerText =
+          `${correctCount} / ${allData.length}`;
+        return;
+      }
+
+      state = "answer";
+      showQuestion();
     }
 
-    const selectedCategories = Array.from(checked).map(cb => cb.value);
-    filteredQuestions = allData.filter(q => selectedCategories.includes(q.category));
-    shuffleArray(filteredQuestions);
-
-    currentQuestion = 0;
-    correctCount = 0;
-    state = "answer";
-
-    document.getElementById("startScreen").style.display = "none";
-    document.getElementById("quiz").style.display = "block";
-    document.getElementById("result").style.display = "none";
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
 
     showQuestion();
-  }
-
-  function showQuestion() {
-    const q = filteredQuestions[currentQuestion];
-
-    const options = [
-      { text: q.correct, isCorrect: true },
-      { text: q.wrong1, isCorrect: false },
-      { text: q.wrong2, isCorrect: false },
-      { text: q.wrong3, isCorrect: false }
-    ];
-    shuffleArray(options);
-
-    document.getElementById("questionNumber").innerText =
-      `${currentQuestion + 1} / ${filteredQuestions.length}`;
-    document.getElementById("question").innerText = q.question;
-    document.getElementById("explanation").innerText = "";
-
-    const optionsDiv = document.getElementById("options");
-    optionsDiv.innerHTML = "";
-
-    options.forEach(opt => {
-      const btn = document.createElement("button");
-      btn.innerText = opt.text;
-
-      btn.onclick = () => {
-        if (state !== "answer") return;
-
-        const buttons = optionsDiv.querySelectorAll("button");
-        buttons.forEach(b => {
-          if (b.innerText === q.correct) {
-            b.style.background = "#86efac"; // 정답
-          } else if (b.innerText === opt.text) {
-            b.style.background = "#fca5a5"; // 내가 고른 오답
-          }
-        });
-
-        if (opt.isCorrect) correctCount++;
-
-        document.getElementById("explanation").innerText = q.explanation;
-        state = "next";
-      };
-
-      optionsDiv.appendChild(btn);
-    });
-  }
-
-  function nextStep() {
-    if (state === "answer") return;
-
-    currentQuestion++;
-
-    if (currentQuestion >= filteredQuestions.length) {
-      document.getElementById("quiz").style.display = "none";
-      document.getElementById("result").style.display = "block";
-      document.getElementById("startScreen").style.display = "block";
-
-      document.getElementById("result").innerText =
-        `결과: ${correctCount} / ${filteredQuestions.length} 정답`;
-
-      return;
-    }
-
-    state = "answer";
-    showQuestion();
-  }
-
-  function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-  }
-
-  // 시작 시 실행
-  loadLocalData();
-</script>
+  </script>
 </body>
 </html>
