@@ -1,4 +1,4 @@
-quizFiles.push({[
+quizFiles.push({
     name: "윤리학",
     data: [
     {
@@ -83,3 +83,4 @@ quizFiles.push({[
     }
     ]
 });
+
