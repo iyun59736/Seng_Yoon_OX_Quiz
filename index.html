@@ -173,14 +173,17 @@
     };
 
     // 퀴즈 로직
+    // 퀴즈 로직
     function showQuestion() {
       const q = allData[currentQuestion];
 
+      // 5선지로 변경: wrong4 추가
       const options = [
         { text: q.correct, isCorrect: true },
         { text: q.wrong1, isCorrect: false },
         { text: q.wrong2, isCorrect: false },
-        { text: q.wrong3, isCorrect: false }
+        { text: q.wrong3, isCorrect: false },
+        { text: q.wrong4, isCorrect: false } // 이 줄이 추가되었습니다.
       ];
       shuffleArray(options);
 
@@ -202,7 +205,7 @@
           const buttons = optionsDiv.querySelectorAll("button");
           buttons.forEach(b => {
             if (b.innerText === q.correct) b.style.background = "#86efac";
-            else if (b.innerText === opt.text) b.style.background = "#fca5a5";
+            else if (b.innerText === opt.text && !opt.isCorrect) b.style.background = "#fca5a5";
           });
 
           if (opt.isCorrect) correctCount++;
@@ -240,4 +243,5 @@
 
 </body>
 </html>
+
 
