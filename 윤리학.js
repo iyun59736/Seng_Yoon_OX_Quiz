@@ -7,9 +7,11 @@ quizFiles.push({
       wrong1: "오답1",
       wrong2: "오답2",
       wrong3: "오답3",
+      wrong4: "오답4",
       explanation: "30자 내외의 짧은 해설"
     },*/
     ]
 });
+
 
 
