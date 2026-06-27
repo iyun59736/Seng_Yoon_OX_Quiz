@@ -135,7 +135,7 @@
     
     <div class="stats">
         <span id="progressText">진행도: 0/0</span>
-        <button class="btn-reset" onclick="resetProgress()">진행상황 초기화</button>
+        <button class="btn-reset" onclick="resetProgress()">초기화</button>
     </div>
 
     <div class="question-box" id="questionBox">
@@ -151,43 +151,41 @@
 </div>
 
 <script>
+    // 여기에 문제 데이터를 직접 입력하세요!
+    const rawQuestions = [
+        { text: "대한민국의 수도는 서울이다.", answer: true },
+        { text: "지구는 평평하다.", answer: false },
+        { text: "고래는 포유류에 속한다.", answer: true },
+        { text: "태양은 서쪽에서 뜬다.", answer: false },
+        { text: "자바스크립트는 프로그래밍 언어이다.", answer: true }
+    ];
+
     let questions = [];
     let currentQuestion = null;
 
-    // 초기화 및 데이터 로드
-    async function initQuiz() {
+    // 데이터 초기화
+    function initQuiz() {
         const cachedData = localStorage.getItem('quiz_questions');
         
         if (cachedData) {
             questions = JSON.parse(cachedData);
-            showNextQuestion();
         } else {
-            try {
-                const response = await fetch('questions.json');
-                const data = await response.json();
-                // JSON 구조에 맞게 solved 속성 보장 및 저장
-                questions = data.map(q => ({...q, solved: q.solved || false}));
-                saveToCache();
-                showNextQuestion();
-            } catch (error) {
-                document.getElementById('questionBox').innerText = "JSON 파일을 불러오지 못했습니다. (서버 환경이나 경로를 확인해주세요)";
-                console.error(error);
-            }
+            // 처음 실행 시 원본 데이터를 사용하여 초기화
+            questions = rawQuestions.map(q => ({...q, solved: false}));
+            saveToCache();
         }
+        showNextQuestion();
     }
 
-    // 캐시(로컬 스토리지)에 저장
     function saveToCache() {
         localStorage.setItem('quiz_questions', JSON.stringify(questions));
     }
 
-    // 무작위로 풀지 않은 문제 하나 가져오기
     function showNextQuestion() {
         const unsolved = questions.filter(q => !q.solved);
         const total = questions.length;
         const solvedCount = total - unsolved.length;
 
-        // UI 업데이트
         const progressPercent = total > 0 ? (solvedCount / total) * 100 : 0;
         document.getElementById('progressFill').style.width = `${progressPercent}%`;
         document.getElementById('progressText').innerText = `진행도: ${solvedCount}/${total}`;
@@ -200,13 +198,11 @@
         }
 
         document.getElementById('btnGroup').style.display = 'flex';
-        // 무작위 선택
         const randomIndex = Math.floor(Math.random() * unsolved.length);
         currentQuestion = unsolved[randomIndex];
         document.getElementById('questionBox').innerText = currentQuestion.text;
     }
 
-    // 정답 제출 처리
     function submitAnswer(userAnswer) {
         if (!currentQuestion) return;
 
@@ -220,30 +216,23 @@
             resultEl.className = "result-message wrong";
         }
 
-        // 실제 원본 배열에서 해당 문제 찾아서 solved 처리
-        const originalIndex = questions.findIndex(q => q.text === currentQuestion.text);
-        if (originalIndex !== -1) {
-            questions[originalIndex].solved = true;
-        }
-
+        // 문제 해결 표시
+        currentQuestion.solved = true;
         saveToCache();
 
-        // 1.2초 후 다음 문제로 이동 (정답 확인용 딜레이)
         setTimeout(() => {
             showNextQuestion();
         }, 1200);
     }
 
-    // 진행 상황 초기화 구동
     function resetProgress() {
         if (confirm("진행 상황을 모두 초기화하고 문제를 처음부터 다시 푸시겠습니까?")) {
-            questions = questions.map(q => ({...q, solved: false}));
+            questions = rawQuestions.map(q => ({...q, solved: false}));
             saveToCache();
             showNextQuestion();
         }
     }
 
-    // 문서 로드 시 시작
     window.onload = initQuiz;
 </script>
 
