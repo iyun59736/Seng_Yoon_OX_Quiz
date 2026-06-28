@@ -1,4 +1,4 @@
-const rawQuestions = [
+[
     { text: "실천 윤리학은 윤리학의 학문적 성립 가능성 여부를 검토하는 것이다.", answer: false, category: "윤리학" },
     { text: "실천 윤리학은 현실의 윤리 문제에 대한 해결 방안을 제시하는 것이다.", answer: true, category: "윤리학" },
     { text: "기술 윤리학은 '옳음', '그름'과 같은 도덕 언어의 의미를 분석하는 것이다.", answer: false, category: "윤리학" },
@@ -138,4 +138,4 @@ const rawQuestions = [
     { text: "규범 윤리학은 메타 윤리학에게 도덕 현상의 가치 중립적 기술을 핵심 과제로 삼아야 한다고 비판할 수 있다.", answer: false, category: "윤리학" },
     { text: "규범 윤리학은 메타 윤리학에게 도덕적 실천을 위해서 보편적인 도덕 원리를 정립해야 한다고 비판할 수 있다.", answer: true, category: "윤리학" },
     { text: "규범 윤리학은 메타 윤리학에게 도덕적 추론의 형식적 타당성 검증을 주된 과제로 삼아야 한다고 비판할 수 있다.", answer: false, category: "윤리학" }
-];
+]
